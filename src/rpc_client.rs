@@ -45,7 +45,7 @@ impl RpcClient {
     self.rpc_client.get_account(pubkey).await.map_err(Into::<_>::into)
   }
 
-  pub async fn get_account_data<T>(&self, account: &Pubkey) -> Result<T>
+  pub async fn get_anchor_account_data<T>(&self, account: &Pubkey) -> Result<T>
   where 
     T: borsh::BorshDeserialize
   {
