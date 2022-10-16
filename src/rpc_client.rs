@@ -51,15 +51,21 @@ impl RpcClient {
     self.rpc_client.get_account(pubkey).await.map_err(Into::<_>::into)
   }
 
+  pub fn deser_anchor_account_data<T>(mut data: Vec<u8>) -> Result<T>
+  where 
+    T: borsh::BorshDeserialize
+  {
+    // Note! the first 8 bytes represent the Anchor account discriminator so we need to get rid of it first
+    data.drain(0..8);
+    try_from_slice_unchecked::<T>(&data).map_err(Into::<_>::into)
+  }
+
   pub async fn get_anchor_account_data<T>(&self, account: &Pubkey) -> Result<T>
   where 
     T: borsh::BorshDeserialize
   {
-    let mut account = self.get_account(account).await?;
-    // Note! the first 8 bytes represent the Anchor account discriminator so we need to get rid of it first
-    account.data.drain(0..8);
-
-    try_from_slice_unchecked::<T>(&account.data).map_err(Into::<_>::into)
+    let account = self.get_account(account).await?;
+    Self::deser_anchor_account_data(account.data)
   }
 
   pub async fn get_account_with_commitment(&self, pubkey: &Pubkey, commitment: CommitmentConfig) -> Result<Response<Option<Account>>> {
