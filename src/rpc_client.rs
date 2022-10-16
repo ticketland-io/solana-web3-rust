@@ -11,6 +11,7 @@ use solana_sdk::{
 };
 use solana_client::{
   nonblocking::rpc_client,
+  rpc_response::Response,
 };
 
 pub struct RpcClient {
@@ -59,5 +60,21 @@ impl RpcClient {
     account.data.drain(0..8);
 
     try_from_slice_unchecked::<T>(&account.data).map_err(Into::<_>::into)
+  }
+
+  pub async fn get_account_with_commitment(&self, pubkey: &Pubkey, commitment: CommitmentConfig) -> Result<Response<Option<Account>>> {
+    self.rpc_client.get_account_with_commitment(pubkey, commitment)
+    .await
+    .map_err(Into::<_>::into)
+  }
+
+  pub async fn account_exists(&self, pubkey: &Pubkey, commitment: CommitmentConfig) -> Result<bool> {
+    let response = self.get_account_with_commitment(pubkey, commitment).await?;
+
+    if response.value.is_none() {
+      return Ok(false)
+    }
+
+    Ok(true)
   }
 }
