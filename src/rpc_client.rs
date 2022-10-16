@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use eyre::Result;
+use eyre::{Result, Report};
 use solana_sdk::{
   account::Account,
   signature::{Keypair, Signer, Signature},
@@ -15,13 +15,13 @@ use solana_client::{
 
 pub struct RpcClient {
   rpc_client: Arc<rpc_client::RpcClient>,
-  payer: Arc<Keypair>,
+  payer: Option<Arc<Keypair>>,
 }
 
 impl RpcClient {
-  pub fn new(solana_rpc: String, operator_priv_key: String) -> Self {
+  pub fn new(solana_rpc: String, operator_priv_key: Option<String>) -> Self {
     let rpc_client =  Arc::new(rpc_client::RpcClient::new_with_commitment(solana_rpc, CommitmentConfig::confirmed()));
-    let payer = Arc::new(Keypair::from_base58_string(&operator_priv_key));
+    let payer = operator_priv_key.map(|key| Arc::new(Keypair::from_base58_string(&key)));
 
     Self {
       rpc_client,
@@ -30,9 +30,14 @@ impl RpcClient {
   }
 
   pub async fn send_tx(&self, ix: Instruction) -> Result<Signature> {
+    if self.payer.is_none() {
+      return Err(Report::msg("please provide the payer account"))?
+    };
+
+    let payer = self.payer.as_ref().unwrap();
     let latest_blockhash = self.rpc_client.get_latest_blockhash().await.unwrap();
-    let message = Message::new(&[ix], Some(&self.payer.pubkey()));
-    let tx = Transaction::new(&[&*self.payer], message, latest_blockhash);
+    let message = Message::new(&[ix], Some(&payer.pubkey()));
+    let tx = Transaction::new(&[&**payer], message, latest_blockhash);
     
     self.rpc_client.send_and_confirm_transaction(&tx).await.map_err(Into::<_>::into)
   }
