@@ -30,6 +30,10 @@ impl RpcClient {
     }
   }
 
+  pub fn payer_key(&self) -> Option<Pubkey> {
+    self.payer.as_ref().map(|payer | payer.pubkey())
+  }
+
   pub async fn send_tx(&self, ix: Instruction) -> Result<Signature> {
     if self.payer.is_none() {
       return Err(Report::msg("please provide the payer account"))?
