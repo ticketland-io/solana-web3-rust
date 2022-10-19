@@ -45,6 +45,10 @@ impl MerkleTree {
     }
   }
 
+  pub fn get_null_leaf() -> [u8; 32] {
+    hashv(&[b"NULL"]).0
+  }
+  
   pub fn root(&self) -> Option<[u8; 32]> {
     self.tree.root()
   }
