@@ -7,7 +7,9 @@ use solana_sdk::{
   message::Message,
   instruction::{Instruction},
   commitment_config::CommitmentConfig,
-  borsh::{try_from_slice_unchecked}, pubkey::Pubkey,
+  borsh::{try_from_slice_unchecked},
+  pubkey::Pubkey,
+  slot_history::Slot,
 };
 use solana_client::{
   nonblocking::rpc_client,
@@ -32,6 +34,10 @@ impl RpcClient {
 
   pub fn payer_key(&self) -> Option<Pubkey> {
     self.payer.as_ref().map(|payer | payer.pubkey())
+  }
+
+  pub async fn get_slot(&self) -> Result<Slot> {
+    Ok(self.rpc_client.get_slot().await?)
   }
 
   pub async fn send_tx(&self, ix: Instruction) -> Result<Signature> {
